@@ -6,6 +6,7 @@ import com.sjl.entity.Order;
 import com.sjl.entity.Stock;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,10 @@ public class StockServiceImpl implements StockService {
 
     @Autowired
     private OrderDao orderDao;
+    //加入redis 设置秒杀时间
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     //出现超卖问题  解决方法1： 使用悲观锁 即直接在方法上添加 synchronized 关键字
     // 由于service层 本身就有事务锁  所以在使用悲观锁的时候一定要 确保悲观锁的范围大于事务锁
@@ -40,6 +45,11 @@ public class StockServiceImpl implements StockService {
     //解决方法2： 使用乐观锁  即利用stock表中的version字段 利用数据库中自带的事务锁（只能由一个线程写）
     @Override
     public  Integer kill(Integer id) {
+        // redis校验抢购时间
+        if (!stringRedisTemplate.hasKey("kill"+id)){
+            throw new RuntimeException("秒杀超时，活动已经结束了");
+        }
+
         // 校验库存
         Stock stock = checkStock(id);
 

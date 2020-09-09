@@ -57,7 +57,7 @@ public class StockController {
             return "订单的id为："+String.valueOf(orderId);
             //}
         }catch (Exception e){
-            log.info(e.getMessage());
+            e.printStackTrace();
             return e.getMessage();
         }
 
