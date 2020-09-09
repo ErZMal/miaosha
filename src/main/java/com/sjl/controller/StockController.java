@@ -1,6 +1,7 @@
 package com.sjl.controller;
 
 import com.google.common.util.concurrent.RateLimiter;
+import com.sjl.service.OrderService;
 import com.sjl.service.StockService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,9 @@ public class StockController {
     private StockService stockService;
 
     private RateLimiter rateLimiter = RateLimiter.create(20);//每秒可以获得令牌的数量
+
+    @Autowired
+    private OrderService orderService;
 
     //接收秒杀请求参数，调用业务创建订单
     @GetMapping("/kill")
@@ -61,6 +65,42 @@ public class StockController {
             return e.getMessage();
         }
 
+    }
+
+    //使用令牌桶进行限流处理 并使用乐观锁来处理超卖问题 使用MD5隐藏抢购连接
+    @GetMapping("/killTokenMd5")
+    public String killTokenMd5(Integer id,Integer userId,String md5){
+        // 加入令牌桶算法
+        if (!rateLimiter.tryAcquire(2,TimeUnit.SECONDS)){
+            log.info("请求被抛弃：抢购失败，当前秒杀活动过于火爆，请重试！");
+            return "请求被抛弃：抢购失败，当前秒杀活动过于火爆，请重试！";
+        }
+
+        try{
+            //调用秒杀业务
+            //添加悲观锁
+            //synchronized (this){
+            int orderId = stockService.kill(id,userId,md5);
+            log.info("拿到订单的id为：[{}]",orderId);
+            return "订单的id为："+String.valueOf(orderId);
+            //}
+        }catch (Exception e){
+            e.printStackTrace();
+            return e.getMessage();
+        }
+
+    }
+
+    @GetMapping("/md5")
+    public String getMd5(Integer id,Integer userId){
+        String md5;
+        try {
+            md5 = orderService.getMd5(id,userId);
+        }catch (Exception e){
+            log.info(e.getMessage());
+            return "生成MD5错误，信息为："+e.getMessage();
+        }
+        return "生成MD5信息为："+md5;
     }
 
     //令牌桶算法的使用示例

@@ -60,6 +60,23 @@ public class StockServiceImpl implements StockService {
         return createOrder(stock);
     }
 
+    @Override
+    public int kill(Integer id, Integer userId, String md5) {
+        //获取hashkey
+        String hashKey = "Key_"+userId+"_"+id;
+        String s = stringRedisTemplate.opsForValue().get(hashKey);
+        if (s == null) throw new RuntimeException("没有携带验证签名,请求不合法!");
+        if (!s.equals(md5)) throw  new RuntimeException("当前请求数据不合法,请稍后再试!");
+        // 校验库存
+        Stock stock = checkStock(id);
+
+        // 扣除库存
+        updateStock(stock);
+
+        // 创建订单
+        return createOrder(stock);
+    }
+
     //校验库存
     private Stock checkStock(Integer id){
         Stock stock = stockDao.checkStock(id);
