@@ -22,10 +22,12 @@ public class StockController {
         //调用秒杀业务
         int orderId;
         try{
-
-            orderId = stockService.kill(id);
-            log.info("拿到订单的id为：[{}]",orderId);
-            return "订单的id为："+orderId;
+            //添加悲观锁
+            synchronized (this){
+                orderId = stockService.kill(id);
+                log.info("拿到订单的id为：[{}]",orderId);
+                return "订单的id为："+orderId;
+            }
         }catch (Exception e){
             e.printStackTrace();
             return e.getMessage();

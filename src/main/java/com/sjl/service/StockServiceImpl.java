@@ -20,8 +20,11 @@ public class StockServiceImpl implements StockService {
     @Autowired
     private OrderDao orderDao;
 
+    //出现超卖问题  解决方法1： 使用悲观锁 即直接在方法上添加 synchronized 关键字
+    // 由于service层 本身就有事务锁  所以在使用悲观锁的时候一定要 确保悲观锁的范围大于事务锁
+    // 所以建议将synchronized关键字 加在 controller 中
     @Override
-    public  Integer kill(Integer id) {
+    public /*synchronized*/ Integer kill(Integer id) {
         // 校验库存
         Stock stock = checkStock(id);
 
