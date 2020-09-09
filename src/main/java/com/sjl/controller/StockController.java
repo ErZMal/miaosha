@@ -3,6 +3,7 @@ package com.sjl.controller;
 import com.google.common.util.concurrent.RateLimiter;
 import com.sjl.service.OrderService;
 import com.sjl.service.StockService;
+import com.sjl.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,9 @@ public class StockController {
 
     @Autowired
     private OrderService orderService;
+
+    @Autowired
+    private UserService userService;
 
     //接收秒杀请求参数，调用业务创建订单
     @GetMapping("/kill")
@@ -77,6 +81,38 @@ public class StockController {
         }
 
         try{
+            //调用秒杀业务
+            //添加悲观锁
+            //synchronized (this){
+            int orderId = stockService.kill(id,userId,md5);
+            log.info("拿到订单的id为：[{}]",orderId);
+            return "订单的id为："+String.valueOf(orderId);
+            //}
+        }catch (Exception e){
+            e.printStackTrace();
+            return e.getMessage();
+        }
+
+    }
+
+    //使用令牌桶进行限流处理 并使用乐观锁来处理超卖问题 使用MD5隐藏抢购连接
+    @GetMapping("/killTokenMd5Limit")
+    public String killTokenMd5Limit(Integer id,Integer userId,String md5){
+        // 加入令牌桶算法
+        if (!rateLimiter.tryAcquire(2,TimeUnit.SECONDS)){
+            log.info("请求被抛弃：抢购失败，当前秒杀活动过于火爆，请重试！");
+            return "请求被抛弃：抢购失败，当前秒杀活动过于火爆，请重试！";
+        }
+
+        try{
+            //加入单用户限制调用频率
+            int count = userService.saveUserCount(userId);
+            log.info("用户截至该次的访问次数为: [{}]", count);
+            boolean isBanned = userService.getUserCount(userId);
+            if (isBanned) {
+                log.info("购买失败,超过频率限制!");
+                return "购买失败，超过频率限制!";
+            }
             //调用秒杀业务
             //添加悲观锁
             //synchronized (this){
