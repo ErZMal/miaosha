@@ -46,6 +46,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!--引入 令牌桶依赖 用于限流处理-->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>28.2-jre</version>
+        </dependency>
+
     </dependencies>
 
     <build>
