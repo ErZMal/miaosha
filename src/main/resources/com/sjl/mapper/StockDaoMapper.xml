@@ -7,7 +7,13 @@
     </select>
 
     <update id="updateStock" parameterType="stock">
-        update stock set sale=#{sale} where id = #{id}
+        update stock set
+            sale=sale + 1,
+            version = version + 1
+        where
+             id = #{id}
+            and
+             version = #{version}
     </update>
 
 </mapper>

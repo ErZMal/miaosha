@@ -6,5 +6,5 @@ public interface StockDao {
 
     Stock checkStock(Integer id);
 
-    void updateStock(Stock stock);
+    int updateStock(Stock stock);
 }
